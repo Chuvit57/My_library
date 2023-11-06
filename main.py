@@ -1,10 +1,9 @@
 import sqlite3 as sq
 
-con = sq.connect("my_books.db")
-cur = con.cursor()
+with sq.connect("my_books.db") as con:
+    cur = con.cursor()
 
-cur.execute("""
-""")
+    cur.execute("""
+    """)
 
 
-con.close()

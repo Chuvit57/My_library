@@ -1,4 +1,5 @@
 import sqlite3 as sq
+from pprint import pprint
 
 
 def create_db():
@@ -14,5 +15,18 @@ def create_db():
         )""")
 
 
+def data_output():
+    with sq.connect("my_books.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM books")
+        # result = cur.fetchall()
+        # pprint(result)
+        # print(type(result))
+        for result in cur:
+            print(result)
+        print(type(result))
+
+
 if __name__ == '__main__':
-    create_db()
+    # create_db()
+    data_output()

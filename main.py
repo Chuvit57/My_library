@@ -39,6 +39,6 @@ def insert_data():
 
 
 if __name__ == '__main__':
-    # create_db()
+    create_db()
     # data_output()
-    insert_data()
+    # insert_data()

@@ -18,13 +18,13 @@ def create_db():
         # cur.execute("DROP TABLE books")  # Удаляет таблицу
         cur.execute("""CREATE TABLE IF NOT EXISTS books (
         book_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name_book TEXT NOT NULL,
+        title TEXT UNIQUE NOT NULL,
         author_id INTEGER,
         theme TEXT NOT NULL,
         description TEXT,
         year INTEGER,
         language TEXT,
-        link TEXT NOT NULL,
+        file_path TEXT NOT NULL,
         FOREIGN KEY (author_id) REFERENCES authors(author_id)
         )""")
 
@@ -50,33 +50,54 @@ def get_author_id(author_name):
 
 
 # Функция, чтобы получить абсолютный путь к книге
-def get_book_path(name_book):
+def get_book_path(title):
     project_folder = os.path.dirname(os.path.abspath(__file__))  # Получаем абсолютный путь к папке проекта
-    book_path = os.path.join(project_folder, books_folder, name_book)  # Формируем абсолютный путь до файла книги
+    book_path = os.path.join(project_folder, books_folder, title)  # Формируем абсолютный путь до файла книги
     return book_path
 
 
 # Функция для добавления данных книг в таблицу "books"
 def add_book(author_name):
-    # author_name = input("Введите имя автора книги: ")
-    name_book = input("Введите название книги: ")
-    theme = input("Введите тематику книги(программ python): ")
+    title = input("Введите название книги: ")
+    theme = input("Введите тематику книги (например, 'программирование на Python'): ")
     description = input("Введите описание книги: ")
     year = int(input("Введите год выпуска книги: "))
-    language = input("Введите на каком языке написана книга 'ru/en': ")
-    link = get_book_path(name_book)
+    language = input("Введите язык книги ('ru' или 'en'): ")
+    file_path = get_book_path(title)
     author_id = get_author_id(author_name)
 
     con = sq.connect("my_books.db")
     cur = con.cursor()
-    cur.execute("INSERT INTO books (name_book, author_id, theme, description, year, language, link) VALUES (?, ?, ?, "
-                "?, ?, ?, ?)",
-                (name_book, author_id, theme, description, year, language, link))
-    con.commit()
-    con.close()
-    return name_book
+
+    try:
+        cur.execute(
+            "INSERT INTO books (title, author_id, theme, description, year, language, file_path) VALUES (?, ?, ?, ?, "
+            "?, ?, ?)",
+            (title, author_id, theme, description, year, language, file_path))
+        con.commit()
+        con.close()
+        return title
+    except sq.IntegrityError as e:
+        print("Ошибка: Книга с таким названием и автором уже существует в базе данных.")
+        con.close()
+        return None
+    except sq.Error as e:
+        print("Ошибка при добавлении книги в базу данных:", e)
+        con.close()
+        return None
 
 
+# Обновление записей а БД
+def update_book(book_id, new_title, new_author, new_description):
+    try:
+        with sq.connect("my_books.db") as con:
+            cur = con.cursor()
+            cur.execute("UPDATE books SET title = ?, author = ?, description = ? WHERE id = ?",
+                        (new_title, new_author, new_description, book_id))
+            con.commit()
+            print("Информация о книге успешно обновлена в базе данных.")
+    except sq.Error as error:
+        print("Ошибка при обновлении информации о книге в базе данных:", error)
 
 
 def data_output():  # Вывод данных
@@ -88,9 +109,30 @@ def data_output():  # Вывод данных
             pprint.pprint(row)
 
 
+def menu():
+    print("Это программа 'Моя библиотека'")
+    print("""
+   ' Вывести название всех книг: 1',
+   'Добавить книгу: 2'
+    """)
+
+
+def main():
+    menu()
+    option = int(input("Введите число: "))
+    if option == 1:
+        data_output()
+    elif option == 2:
+        author_name = add_author()
+        add_book(author_name)
+    else:
+        print("Вы ввели неправильное число")
+
+
 if __name__ == '__main__':
+    main()
     # create_db()
     # author_name = add_author()
     # add_book(author_name)
-    data_output()
+    # data_output()
     # insert_data()

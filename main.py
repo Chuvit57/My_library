@@ -88,16 +88,36 @@ def add_book(author_name):
 
 
 # Обновление записей а БД
-def update_book(book_id, new_title, new_author, new_description):
+def update_book(new_title=None, new_author=None, new_description=None):
+    book_id = input("Введите ID книги: ")
+    new_title = input("Введите новое название: ")
+    new_author = input("Введите нового автора: ")
+    new_description = input("Введите новое описание: ")
     try:
         with sq.connect("my_books.db") as con:
             cur = con.cursor()
-            cur.execute("UPDATE books SET title = ?, author = ?, description = ? WHERE id = ?",
+            cur.execute("UPDATE books SET title = ?, author_id = ?, description = ? WHERE book_id = ?",
                         (new_title, new_author, new_description, book_id))
             con.commit()
             print("Информация о книге успешно обновлена в базе данных.")
     except sq.Error as error:
         print("Ошибка при обновлении информации о книге в базе данных:", error)
+
+
+# Удаление книги
+def delete_book():
+    book_id = input("Введите ID книги которую вы хотите удалить: ")
+    try:
+        with sq.connect("my_books.db") as con:
+            cur = con.cursor()
+            # Удаляем связанные данные из другой таблицы (authors)
+            cur.execute("DELETE FROM authors WHERE author_id IN (SELECT author_id FROM books WHERE book_id = ?)",
+                        (book_id,))
+            cur.execute("DELETE FROM books WHERE book_id = ?", (book_id,))
+            con.commit()
+            print("Книга и связанные с ней данные успешно удалена из базы данных.")
+    except sq.Error as error:
+        print("Ошибка при удалении книги из базы данных:", error)
 
 
 # Выбираем по теме
@@ -139,7 +159,9 @@ def menu():
    ' Вывести все о книгах: 1',
    'Добавить книгу: 2',
    'Вывести название всех книг: 3',
-   'Вывести все книги по теме: 4'
+   'Вывести все книги по теме: 4',
+   'Обновить информацию о книге: 5',
+   'Удалить книгу: 6'
     """)
 
 
@@ -155,6 +177,10 @@ def main():
         data_output_id_title()
     elif option == 4:
         select_by_topic()
+    elif option == 5:
+        update_book(new_title=None, new_author=None, new_description=None)
+    elif option == 6:
+        delete_book()
     else:
         print("Вы ввели неправильное число")
 

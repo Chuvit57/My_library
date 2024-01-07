@@ -29,6 +29,22 @@ def create_db():
         )""")
 
 
+# Функция для валидации ID книги
+def validate_book_id(book_id):
+    try:
+        with sq.connect("my_books.db") as con:
+            cur = con.cursor()
+            cur.execute("SELECT * FROM books WHERE book_id = ?", (book_id,))
+            book = cur.fetchone()
+            if book:
+                return True  # ID книги найден в базе данных
+            else:
+                return False  # ID книги не найден в базе данных
+    except sq.Error as error:
+        print("Ошибка при выполнении запроса в базе данных:", error)
+        return False  # Ошибка при выполнении запроса
+
+
 # Функция для добавления данных авторов в таблицу "authors"
 def add_author():
     author_name = input("Введите имя автора: ")
@@ -88,36 +104,46 @@ def add_book(author_name):
 
 
 # Обновление записей а БД
-def update_book(new_title=None, new_author=None, new_description=None):
+def update_book(attempts=3):
+    if attempts <= 0:
+        print("Достигнуто максимальное количество попыток. Программа завершается.")
+        return
     book_id = input("Введите ID книги: ")
-    new_title = input("Введите новое название: ")
-    new_author = input("Введите нового автора: ")
-    new_description = input("Введите новое описание: ")
-    try:
-        with sq.connect("my_books.db") as con:
-            cur = con.cursor()
-            cur.execute("UPDATE books SET title = ?, author_id = ?, description = ? WHERE book_id = ?",
-                        (new_title, new_author, new_description, book_id))
-            con.commit()
-            print("Информация о книге успешно обновлена в базе данных.")
-    except sq.Error as error:
-        print("Ошибка при обновлении информации о книге в базе данных:", error)
+    if validate_book_id(book_id):
+        new_title = input("Введите новое название: ")
+        new_author = input("Введите нового автора: ")
+        new_description = input("Введите новое описание: ")
+        try:
+            with sq.connect("my_books.db") as con:
+                cur = con.cursor()
+                cur.execute("UPDATE books SET title = ?, author_id = ?, description = ? WHERE book_id = ?",
+                            (new_title, new_author, new_description, book_id))
+                con.commit()
+                print("Информация о книге успешно обновлена в базе данных.")
+        except sq.Error as error:
+            print("Ошибка при обновлении информации о книге в базе данных:", error)
+    else:
+        print("Книга с указанным ID не найдена в базе данных.")
+        update_book(attempts - 1)
 
 
 # Удаление книги
 def delete_book():
     book_id = input("Введите ID книги которую вы хотите удалить: ")
-    try:
-        with sq.connect("my_books.db") as con:
-            cur = con.cursor()
-            # Удаляем связанные данные из другой таблицы (authors)
-            cur.execute("DELETE FROM authors WHERE author_id IN (SELECT author_id FROM books WHERE book_id = ?)",
-                        (book_id,))
-            cur.execute("DELETE FROM books WHERE book_id = ?", (book_id,))
-            con.commit()
-            print("Книга и связанные с ней данные успешно удалена из базы данных.")
-    except sq.Error as error:
-        print("Ошибка при удалении книги из базы данных:", error)
+    if validate_book_id(book_id):
+        try:
+            with sq.connect("my_books.db") as con:
+                cur = con.cursor()
+                # Удаляем связанные данные из другой таблицы (authors)
+                cur.execute("DELETE FROM authors WHERE author_id IN (SELECT author_id FROM books WHERE book_id = ?)",
+                            (book_id,))
+                cur.execute("DELETE FROM books WHERE book_id = ?", (book_id,))
+                con.commit()
+                print("Книга и связанные с ней данные успешно удалена из базы данных.")
+        except sq.Error as error:
+            print("Ошибка при удалении книги из базы данных:", error)
+    else:
+        print("Книга с указанным ID не найдена в базе данных.")
 
 
 # Выбираем по теме
@@ -146,9 +172,6 @@ def data_output_id_title():  # Вывод id и title
         cur.execute("SELECT book_id, title  FROM books")
         results = cur.fetchall()
 
-        # for row in results:
-        #     pprint.pprint(list(row))
-        #     print(type(row))
         for idx, row in enumerate(results, 1):
             print(f"{idx}. ID: {row[0]}, Название книги: {row[1]}")
 
@@ -178,7 +201,7 @@ def main():
     elif option == 4:
         select_by_topic()
     elif option == 5:
-        update_book(new_title=None, new_author=None, new_description=None)
+        update_book()
     elif option == 6:
         delete_book()
     else:

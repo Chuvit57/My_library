@@ -100,7 +100,18 @@ def update_book(book_id, new_title, new_author, new_description):
         print("Ошибка при обновлении информации о книге в базе данных:", error)
 
 
-def data_output():  # Вывод данных
+# Выбираем по теме
+def select_by_topic():
+    theme = input("Введите тему: ")
+    with sq.connect("my_books.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT book_id, title  FROM books WHERE theme = ?", (theme,))
+        results = cur.fetchall()
+        for row in results:
+            pprint.pprint(row)
+
+
+def data_output():  # Вывод данных всех
     with sq.connect("my_books.db") as con:
         cur = con.cursor()
         cur.execute("SELECT * FROM books")
@@ -109,11 +120,26 @@ def data_output():  # Вывод данных
             pprint.pprint(row)
 
 
+def data_output_id_title():  # Вывод id и title
+    with sq.connect("my_books.db") as con:
+        cur = con.cursor()
+        cur.execute("SELECT book_id, title  FROM books")
+        results = cur.fetchall()
+
+        # for row in results:
+        #     pprint.pprint(list(row))
+        #     print(type(row))
+        for idx, row in enumerate(results, 1):
+            print(f"{idx}. ID: {row[0]}, Название книги: {row[1]}")
+
+
 def menu():
     print("Это программа 'Моя библиотека'")
     print("""
-   ' Вывести название всех книг: 1',
-   'Добавить книгу: 2'
+   ' Вывести все о книгах: 1',
+   'Добавить книгу: 2',
+   'Вывести название всех книг: 3',
+   'Вывести все книги по теме: 4'
     """)
 
 
@@ -125,6 +151,10 @@ def main():
     elif option == 2:
         author_name = add_author()
         add_book(author_name)
+    elif option == 3:
+        data_output_id_title()
+    elif option == 4:
+        select_by_topic()
     else:
         print("Вы ввели неправильное число")
 
